@@ -2,7 +2,6 @@ package thrift_util
 
 type NextBuffer interface {
 	Next(n int) (p []byte, err error)
-	NextByte() (p byte, err error)
 	Skip(n int) (err error)
 }
 

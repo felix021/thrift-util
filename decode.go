@@ -74,9 +74,9 @@ func skipField(tp byte, buf NextBuffer) (size int, err error) {
 }
 
 func skipList(buf NextBuffer) (size int, err error) {
-	var tp byte
+	var tp []byte
 	var n, valueSize int
-	if tp, err = buf.NextByte(); err != nil {
+	if tp, err = buf.Next(1); err != nil {
 		return
 	}
 	if n, err = readInt(buf); err != nil {
@@ -84,7 +84,7 @@ func skipList(buf NextBuffer) (size int, err error) {
 	}
 	size += 5 // 1 + 4
 	for i := 0; i < n; i++ {
-		if valueSize, err = skipField(tp, buf); err != nil {
+		if valueSize, err = skipField(tp[0], buf); err != nil {
 			return
 		}
 		size += valueSize
@@ -93,12 +93,12 @@ func skipList(buf NextBuffer) (size int, err error) {
 }
 
 func skipMap(buf NextBuffer) (size int, err error) {
-	var keyType, valueType byte
+	var keyType, valueType []byte
 	var n, keySize, valueSize int
-	if keyType, err = buf.NextByte(); err != nil {
+	if keyType, err = buf.Next(1); err != nil {
 		return
 	}
-	if valueType, err = buf.NextByte(); err != nil {
+	if valueType, err = buf.Next(1); err != nil {
 		return
 	}
 	if n, err = readInt(buf); err != nil {
@@ -106,10 +106,10 @@ func skipMap(buf NextBuffer) (size int, err error) {
 	}
 	size += 6 // 1 + 1 + 4
 	for i := 0; i < n; i++ {
-		if keySize, err = skipField(keyType, buf); err != nil {
+		if keySize, err = skipField(keyType[0], buf); err != nil {
 			return
 		}
-		if valueSize, err = skipField(valueType, buf); err != nil {
+		if valueSize, err = skipField(valueType[0], buf); err != nil {
 			return
 		}
 		size += keySize + valueSize
@@ -126,19 +126,19 @@ func readInt(buf NextBuffer) (n int, err error) {
 }
 
 func skipStruct(buf NextBuffer) (size int, err error) {
-	var tp byte
+	var tp []byte
 	var fieldSize int
 	for {
-		if tp, err = buf.NextByte(); err != nil {
+		if tp, err = buf.Next(1); err != nil {
 			return
 		}
-		if tp == TYPE_STOP {
+		if tp[0] == TYPE_STOP {
 			return size + 1, nil
 		}
 		if err = buf.Skip(2); err != nil {
 			return
 		}
-		if fieldSize, err = skipField(tp, buf); err != nil || fieldSize == 0 {
+		if fieldSize, err = skipField(tp[0], buf); err != nil || fieldSize == 0 {
 			return
 		}
 		size += 3 + fieldSize
