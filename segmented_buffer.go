@@ -1,22 +1,23 @@
 package thrift_util
 
 const (
-	initialMaxLength     = 64 * 1024
-	defaultSegmentLength = 512
+	initialMaxLength = 64 * 1024
 )
 
 type SegmentedBuffer struct {
-	segments  [][]byte
-	segLength int
-	pos       int
-	total     int
+	segments    [][]byte
+	segLength   int
+	pos         int
+	total       int
+	noCopyLimit int
 }
 
-func NewByteSegments(segLength int) *SegmentedBuffer {
+func NewByteSegments(segLength int, noCopyLimit int) *SegmentedBuffer {
 	s := &SegmentedBuffer{
-		segments:  make([][]byte, 0, initialMaxLength/segLength),
-		segLength: segLength,
-		pos:       -1,
+		segments:    make([][]byte, 0, initialMaxLength/segLength),
+		segLength:   segLength,
+		pos:         -1,
+		noCopyLimit: noCopyLimit,
 	}
 	s.newSegment()
 	return s
@@ -29,25 +30,23 @@ func (b *SegmentedBuffer) newSegment() []byte {
 	return s
 }
 
+func (b *SegmentedBuffer) appendSegment(buf []byte) {
+	b.segments = append(b.segments, buf)
+	b.pos += 1
+}
+
 func (b *SegmentedBuffer) Append(buf []byte) {
 	b.total += len(buf)
-	for {
-		seg := b.segments[b.pos]
-		available := cap(seg) - len(seg)
-		left := len(buf)
-		if available > 0 {
-			size := available
-			if left < available {
-				size = left
-			}
-			b.segments[b.pos] = append(seg, buf[:size]...)
-		}
-		if available >= left {
-			return
-		}
-		b.newSegment()
-		buf = buf[available:]
+	if len(buf) > b.noCopyLimit {
+		b.appendSegment(buf)
+		return
 	}
+	seg := b.segments[b.pos]
+	available := cap(seg) - len(seg)
+	if available < len(buf) {
+		seg = b.newSegment()
+	}
+	b.segments[b.pos] = append(seg, buf...)
 }
 
 func (b *SegmentedBuffer) Buffer() []byte {
