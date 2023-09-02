@@ -4,9 +4,18 @@ import (
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	thrift_util "github.com/felix021/thrift-util"
+	"github.com/felix021/thrift-util/buffer"
+	"github.com/felix021/thrift-util/decoder"
 	"tests/kitex_gen/test"
 )
+
+func assert(t *testing.T, success bool, fmt string, args ...interface{}) bool {
+	if success {
+		return false
+	}
+	t.Errorf("assert failed: "+fmt, args...)
+	return false
+}
 
 func mustEncode(v *test.Demo) []byte {
 	transport := thrift.NewTMemoryBuffer()
@@ -19,18 +28,10 @@ func mustEncode(v *test.Demo) []byte {
 	return transport.Bytes()
 }
 
-func assert(t *testing.T, success bool, fmt string, args ...interface{}) bool {
-	if success {
-		return false
-	}
-	t.Errorf("assert failed: "+fmt, args...)
-	return false
-}
-
 func testCase(t *testing.T, name string, v *test.Demo) {
 	t.Run(name, func(t *testing.T) {
 		buf := mustEncode(v)
-		size, err := thrift_util.StructSize(thrift_util.NewByteBuffer(buf))
+		size, err := decoder.StructSize(buffer.NewBytesBuffer(buf))
 		if !assert(t, err == nil, "err = %v, buf = %v", err, buf) {
 			return
 		}
