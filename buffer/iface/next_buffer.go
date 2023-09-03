@@ -7,6 +7,6 @@ var (
 )
 
 type NextBuffer interface {
-	Next(n int) (p []byte, err error)
+	Next(n int) (buf []byte, err error)
 	Skip(n int) (err error)
 }
